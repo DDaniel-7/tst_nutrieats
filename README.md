@@ -2,6 +2,7 @@
 
 Dwicakra Danielle / 18221092
 
+Sebelum menjalankan program maka ada beberapa yang perlu di install untuk menjalankan API
 # Install fastapi
 ```
 python -m pip install fastapi     
