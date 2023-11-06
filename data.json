@@ -1,0 +1,80 @@
+{
+    "user": [
+        {
+            "id_user": 1,
+            "nama_user": "John Doe",
+            "umur_user": 30,
+            "target": "bulking"
+        },
+        {
+            "id_user": 2,
+            "nama_user": "Jane Doe",
+            "umur_user": 25,
+            "target": "cutting"
+        },
+        {
+            "id_user": 3,
+            "nama_user": "Michael Smith",
+            "umur_user": 35,
+            "target": "diet"
+        }
+    ],
+    "menu": [
+        {
+            "id_menu": 1,
+            "nama_menu": "batagor",
+            "kalori": 500,
+            "target": "bulking"
+        },
+        {
+            "id_menu": 2,
+            "nama_menu": "Steamed Vegetables",
+            "kalori": 150,
+            "target": "diet"
+        },
+        {
+            "id_menu": 3,
+            "nama_menu": "Protein Smoothie",
+            "kalori": 200,
+            "target": "cutting"
+        },
+        {
+            "id_menu": 4,
+            "nama_menu": "Oatmeal",
+            "kalori": 250,
+            "target": "diet"
+        },
+        {
+            "id_menu": 5,
+            "nama_menu": "steak",
+            "kalori": 600,
+            "target": "bulking"
+        }
+    ],
+    "recomendation": [
+        {
+            "id": 1,
+            "id_user": 1,
+            "id_menu": 1,
+            "date": "2023-11-04 13:08:12"
+        },
+        {
+            "id": 2,
+            "id_user": 1,
+            "id_menu": 5,
+            "date": "2023-11-04 13:08:12"
+        },
+        {
+            "id": 3,
+            "id_user": 3,
+            "id_menu": 2,
+            "date": "2023-11-04 13:15:59"
+        },
+        {
+            "id": 4,
+            "id_user": 3,
+            "id_menu": 4,
+            "date": "2023-11-04 13:15:59"
+        }
+    ]
+}
