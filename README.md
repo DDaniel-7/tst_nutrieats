@@ -28,6 +28,7 @@ OR
 ```
 
 # Setting up before run uvicorn 
+Dilakukan untuk prevent error yang terjadi
 ```
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ```
