@@ -9,7 +9,7 @@ COPY . /fastapi
 WORKDIR /fastapi
 
 # Install any necessary dependencies
-RUN pip install fastapi uvicorn
+RUN pip install fastapi uvicorn passlib bcrypt jwt pyjwt
 
 # Command to run the FastAPI server when the container starts
 CMD ["uvicorn", "nutrieats:app", "--host", "0.0.0.0", "--port", "80"]
