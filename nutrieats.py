@@ -9,10 +9,10 @@ from passlib.hash import bcrypt
 
 with open('data.json', 'r') as file:
     data = json.load(file)
-
+    
+auth = APIRouter(tags=["auth"],)
 menu = APIRouter(tags=["menu"],)
 user = APIRouter(tags=["user"],)
-auth = APIRouter(tags=["auth"],)
 recomendation = APIRouter(tags=["recommendation"],)
 
 class User(BaseModel):
@@ -195,7 +195,7 @@ def get_recommendation(id_user: int, user: signin_user = Depends(get_current_use
 
     return list(recommended_menus)
 
+app.include_router(auth)
 app.include_router(menu)
 app.include_router(user)
-app.include_router(auth)
 app.include_router(recomendation)
