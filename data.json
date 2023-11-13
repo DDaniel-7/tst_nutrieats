@@ -87,6 +87,16 @@
             "id": 2,
             "username": "dnl1",
             "pass_hash": "$2b$12$OL7Pruqm0WMkqjnHVQoFluL/7CB0TmTGOx7gMFLaa7sFRkbJUntmW"
+        },
+        {
+            "id": 3,
+            "username": "danil",
+            "pass_hash": "$2b$12$MkOhL2MsZWz0fTh0JsCEfeXm.ANUm1K/WKOhBuHuI/ArKB/DTeUOS"
+        },
+        {
+            "id": 4,
+            "username": "dnl2",
+            "pass_hash": "$2b$12$Bg55Wxw7P2r0EG12nRfDNuLhZHeDjuq1BHohAOP7WwRq/IpvI3BOq"
         }
     ]
 }
