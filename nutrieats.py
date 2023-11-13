@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, APIRouter
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from datetime import datetime
@@ -9,6 +9,11 @@ from passlib.hash import bcrypt
 
 with open('data.json', 'r') as file:
     data = json.load(file)
+
+menu = APIRouter(tags=["menu"],)
+user = APIRouter(tags=["user"],)
+auth = APIRouter(tags=["auth"],)
+recomendation = APIRouter(tags=["recommendation"],)
 
 class User(BaseModel):
     id_user: int
@@ -64,7 +69,7 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-@app.post('/token')
+@auth.post('/token')
 async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
 
@@ -89,7 +94,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail='Invalid username or password'
         )
 
-@app.post('/signin_user')
+@auth.post('/signin_user')
 async def create_user(username: str, password: str):
     last_user_id = data['signin_user'][-1]['id'] if data['signin_user'] else 0
     user_id = last_user_id + 1
@@ -98,21 +103,21 @@ async def create_user(username: str, password: str):
     write_data(data)
     return {'message': 'User created successfully'}
 
-@app.get('/signin_user/me')
+@auth.get('/signin_user/me')
 async def get_user(user: signin_user = Depends(get_current_user)):
     return {'id': user.id, 'username': user.username}
 
-@app.get("/get_menu")
+@menu.get("/get_menu")
 def get_menu(user: signin_user = Depends(get_current_user)):
     return data["menu"]
 
 
-@app.get("/get_user")
+@user.get("/get_user")
 def get_user(user: signin_user = Depends(get_current_user)):
     return data["user"]
 
 
-@app.put("/update_menu")
+@menu.put("/update_menu")
 async def update_menu(id_menu: int, nama_menu: str, kalori: int, target: str, user: signin_user = Depends(get_current_user)):
     for menu in data["menu"]:
         if menu["id_menu"] == id_menu:
@@ -125,7 +130,7 @@ async def update_menu(id_menu: int, nama_menu: str, kalori: int, target: str, us
     return {"error": "Menu not found"}
 
 
-@app.delete("/delete_menu")
+@menu.delete("/delete_menu")
 async def delete_menu(id_menu: int, user: signin_user = Depends(get_current_user)):
     for menu in data["menu"]:
         if menu["id_menu"] == id_menu:
@@ -136,7 +141,7 @@ async def delete_menu(id_menu: int, user: signin_user = Depends(get_current_user
     return {"error": "Menu not found"}
 
 
-@app.post("/add_menu")
+@menu.post("/add_menu")
 async def add_menu(id_menu: int, nama_menu: str, kalori: int, target: str, user: signin_user = Depends(get_current_user)):
     menu_ids = {menu["id_menu"] for menu in data["menu"]}
     if id_menu in menu_ids:
@@ -148,7 +153,7 @@ async def add_menu(id_menu: int, nama_menu: str, kalori: int, target: str, user:
     return {"message": "Menu added successfully"}
 
 
-@app.post("/add_user")
+@user.post("/add_user")
 async def add_user(id_user: int, nama_user: str, umur_user: int, target: str, user: signin_user = Depends(get_current_user)):
     user_ids = {user["id_user"] for user in data["user"]}
     if id_user in user_ids:
@@ -159,7 +164,7 @@ async def add_user(id_user: int, nama_user: str, umur_user: int, target: str, us
         json.dump(data, outfile, indent=4)
     return {"message": "User added successfully"}
 
-@app.get("/get_recommendation")
+@recomendation.get("/get_recommendation")
 def get_recommendation(id_user: int, user: signin_user = Depends(get_current_user)):
     user_target = None
     for user in data["user"]:
@@ -189,3 +194,8 @@ def get_recommendation(id_user: int, user: signin_user = Depends(get_current_use
         json.dump(data, outfile, indent=4)
 
     return list(recommended_menus)
+
+app.include_router(menu)
+app.include_router(user)
+app.include_router(auth)
+app.include_router(recomendation)
