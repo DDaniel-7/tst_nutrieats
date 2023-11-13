@@ -7,9 +7,9 @@ ADD nutrieats.py .
 # Copy the current directory contents into the container at /app
 COPY . /fastapi
 WORKDIR /fastapi
-
+COPY ./requirements.txt /fastapi/requirements.txt
 # Install any necessary dependencies
-RUN pip install fastapi uvicorn passlib bcrypt jwt pyjwt python-multipart
+RUN pip install --no-cache-dir --upgrade -r /fastapi/requirements.txt
 
 # Command to run the FastAPI server when the container starts
 CMD ["uvicorn", "nutrieats:app", "--host", "0.0.0.0", "--port", "80"]
