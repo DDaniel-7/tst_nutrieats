@@ -1,6 +1,8 @@
 # II3160 Teknologi Sistem Terintegrasi 
 
 Dwicakra Danielle / 18221092
+Testing API dapat dilakukan dengan dns berikut:
+dnsnutrieatsfilter.ffb6hxbfa2d7fmd5.southeastasia.azurecontainer.io/docs
 
 Sebelum menjalankan program maka ada beberapa yang perlu di install untuk menjalankan API
 # Install fastapi
