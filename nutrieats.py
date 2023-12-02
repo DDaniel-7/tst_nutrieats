@@ -2,14 +2,19 @@ from fastapi import FastAPI, HTTPException, Depends, status, APIRouter
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from datetime import datetime
-import json
 import jwt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.hash import bcrypt
+import requests
+from pymongo import MongoClient
 
-with open('data.json', 'r') as file:
-    data = json.load(file)
-    
+client = MongoClient('mongodb+srv://18221092:Sn12345@cluster0.madmsqj.mongodb.net/?retryWrites=true&w=majority')
+db = client["data"]
+collection = db["API"]
+data = collection.find_one({})
+
+integratedToken = ''
+
 auth = APIRouter(tags=["auth"],)
 menu = APIRouter(tags=["menu"],)
 user = APIRouter(tags=["user"],)
@@ -32,7 +37,7 @@ class Menu(BaseModel):
     kalori: int
     target: str
 
-class signin_user:
+class signin_admin:
     def __init__(self, id, username, pass_hash):
         self.id = id
         self.username = username
@@ -42,130 +47,167 @@ class signin_user:
         return bcrypt.verify(password, self.pass_hash)
 
 def write_data(data):
-    with open("data.json", "w") as write_file:
-        json.dump(data, write_file, indent=4)
+    collection.replace_one({}, data, upsert=True)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 app = FastAPI()
 JWT_SECRET = 'myjwtsecret'
 ALGORITHM = 'HS256'
 
-def get_user_by_username(username):
-    for desain_user in data['signin_user']:
+def get_admin_by_username(username):
+    for desain_user in data['signin_admin']:
         if desain_user['username'] == username:
             return desain_user
     return None
 
-def authenticate_user(username: str, password: str):
-    user_data = get_user_by_username(username)
-    if not user_data:
+def authenticate_admin(username: str, password: str):
+    admin_data = get_admin_by_username(username)
+    if not admin_data:
         return None
 
-    user = signin_user(id=user_data['id'], username=user_data['username'], pass_hash=user_data['pass_hash'])
+    admin = signin_admin(id=admin_data['id'], username=admin_data['username'], pass_hash=admin_data['pass_hash'])
 
-    if not user.verify_password(password):
+    if not admin.verify_password(password):
         return None
 
-    return user
+    return admin
 
 
 @auth.post('/token')
 async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
-
-    if not user:
+    global integratedToken
+    admin = authenticate_admin(form_data.username, form_data.password)
+    if not admin:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail='Invalid username or password'
         )
+    url = 'https://bevbuddy.up.railway.app/login'
+    data = {
+        'username': form_data.username,
+        'password': form_data.password
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        try:
+            result = response.json()
+            global integratedToken
+            integratedToken = result.get('token')
+            token = jwt.encode({'id': admin.id, 'username': admin.username}, JWT_SECRET, algorithm=ALGORITHM)
+        except ValueError as e:
+            print("Invalid JSON format in response:", response.text)
+            return {'Error': 'Invalid JSON format in response'}
+        return {'access_token': token, 'token_type': 'bearer', 'integrasiToken' : integratedToken}
+    else:
+        return {'Error': response.status_code, 'Detail': response.text}
 
-    token = jwt.encode({'id': user.id, 'username': user.username}, JWT_SECRET, algorithm=ALGORITHM)
-
-    return {'access_token': token, 'token_type': 'bearer'}
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_admin(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-        user = get_user_by_username(payload.get('username'))
-        return signin_user(id=user['id'], username=user['username'], pass_hash=user['pass_hash'])
+        admin = get_admin_by_username(payload.get('username'))
+        return signin_admin(id=admin['id'], username=admin['username'], pass_hash=admin['pass_hash'])
     except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail='Invalid username or password'
         )
 
-@auth.post('/signin_user')
-async def create_user(username: str, password: str):
-    last_user_id = data['signin_user'][-1]['id'] if data['signin_user'] else 0
-    user_id = last_user_id + 1
-    user = jsonable_encoder(signin_user(id=user_id, username=username, pass_hash=bcrypt.hash(password)))
-    data['signin_user'].append(user)
+@auth.post('/signin_admin')
+async def create_user(username: str,fullname: str, password: str, email : str):
+    for existing_user in data['signin_admin']:
+        if existing_user['username'] == username:
+            # Username already exists, return an appropriate response
+            return {"error": "Username already taken"}
+    last_admin_id = data['signin_admin'][-1]['id'] if data['signin_admin'] else 0
+    admin_id = last_admin_id + 1
+    user = jsonable_encoder(signin_admin(id=admin_id, username=username, pass_hash=bcrypt.hash(password)))
+    data['signin_admin'].append(user)
+    url = 'https://bevbuddy.up.railway.app/register'
+    headers = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+    admin_data = {
+        "username": username,
+        "fullname": fullname,
+        "email": email+"@gmail.com",
+        "password": password,
+        "role": "customer",
+        "token": "tokendaniel"
+    }
+    response = requests.post(url, headers=headers, json=admin_data)
     write_data(data)
-    return {'message': 'User created successfully'}
+    return {"username" : username, "password" : password,"email": email+"@gmail.com", "integratedRegister" : response.json()}
+    
 
-@auth.get('/signin_user/me')
-async def get_user(user: signin_user = Depends(get_current_user)):
-    return {'id': user.id, 'username': user.username}
+@auth.get('/current_admin')
+async def get_admin(admin: signin_admin = Depends(get_current_admin)):
+    return {'id': admin.id, 'username': admin.username}
 
-@menu.get("/get_menu")
-def get_menu(user: signin_user = Depends(get_current_user)):
+@menu.get("/menu")
+def get_menu(admin: signin_admin = Depends(get_current_admin)):
     return data["menu"]
 
 
-@user.get("/get_user")
-def get_user(user: signin_user = Depends(get_current_user)):
+@user.get("/user")
+def get_user(admin: signin_admin = Depends(get_current_admin)):
     return data["user"]
 
 
-@menu.put("/update_menu")
-async def update_menu(id_menu: int, nama_menu: str, kalori: int, target: str, user: signin_user = Depends(get_current_user)):
+@menu.put("/menu")
+async def update_menu(id_menu: int, nama_menu: str, kalori: int, target: str, admin: signin_admin = Depends(get_current_admin)):
     for menu in data["menu"]:
         if menu["id_menu"] == id_menu:
             menu["nama_menu"] = nama_menu
             menu["kalori"] = kalori
             menu["target"] = target
-            with open('data.json', 'w') as outfile:
-                json.dump(data, outfile, indent=4)
+            write_data(data)
             return {"message": "Menu updated successfully"}
     return {"error": "Menu not found"}
 
 
-@menu.delete("/delete_menu")
-async def delete_menu(id_menu: int, user: signin_user = Depends(get_current_user)):
+@menu.delete("/menu")
+async def delete_menu(id_menu: int, admin: signin_admin = Depends(get_current_admin)):
     for menu in data["menu"]:
         if menu["id_menu"] == id_menu:
             data["menu"].remove(menu)
-            with open('data.json', 'w') as outfile:
-                json.dump(data, outfile, indent=4)
+            write_data(data)
             return {"message": "Menu deleted successfully"}
     return {"error": "Menu not found"}
 
 
-@menu.post("/add_menu")
-async def add_menu(id_menu: int, nama_menu: str, kalori: int, target: str, user: signin_user = Depends(get_current_user)):
+@menu.post("/menu")
+async def add_menu(id_menu: int, nama_menu: str, kalori: int, target: str, admin: signin_admin = Depends(get_current_admin)):
     menu_ids = {menu["id_menu"] for menu in data["menu"]}
     if id_menu in menu_ids:
         raise HTTPException(status_code=400, detail="ID already exists")
     new_menu = {"id_menu": id_menu, "nama_menu": nama_menu, "kalori": kalori, "target": target}
     data["menu"].append(new_menu)
-    with open('data.json', 'w') as outfile:
-        json.dump(data, outfile, indent=4)
+    write_data(data)
     return {"message": "Menu added successfully"}
 
 
-@user.post("/add_user")
-async def add_user(id_user: int, nama_user: str, umur_user: int, target: str, user: signin_user = Depends(get_current_user)):
+@user.post("/user")
+async def add_user(id_user: int, nama_user: str, umur_user: int, target: str, admin: signin_admin = Depends(get_current_admin)):
     user_ids = {user["id_user"] for user in data["user"]}
     if id_user in user_ids:
         raise HTTPException(status_code=400, detail="ID already exists")
     new_user = {"id_user": id_user, "nama_user": nama_user, "umur_user": umur_user, "target": target}
     data["user"].append(new_user)
-    with open('data.json', 'w') as outfile:
-        json.dump(data, outfile, indent=4)
+    write_data(data)
     return {"message": "User added successfully"}
 
-@recomendation.get("/get_recommendation")
-def get_recommendation(id_user: int, user: signin_user = Depends(get_current_user)):
+@user.delete("/user")
+async def delete_user(id_user: int, admin: signin_admin = Depends(get_current_admin)):
+    for user in data["user"]:
+        if user["id_user"] == id_user:
+            data["user"].remove(user)
+            write_data(data)
+            return {"message": "Menu deleted successfully"}
+    return {"error": "Menu not found"}
+
+@recomendation.get("/food_Recommendation")
+def food_recommendation(id_user: int, admin: signin_admin = Depends(get_current_admin)):
     user_target = None
     for user in data["user"]:
         if user["id_user"] == id_user:
@@ -190,10 +232,32 @@ def get_recommendation(id_user: int, user: signin_user = Depends(get_current_use
     new_recommendation_id = max(rec["id"] for rec in data["recomendation"]) + 1 if data["recomendation"] else 1
     new_recommendations = [{"id": new_recommendation_id + i, "id_user": id_user, "id_menu": menu_id, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")} for i, menu_id in enumerate(menu_ids)]
     data["recomendation"].extend(new_recommendations)
-    with open('data.json', 'w') as outfile:
-        json.dump(data, outfile, indent=4)
-
     return list(recommended_menus)
+
+
+@app.post("/recommendations", tags = ["Integrations"])      
+async def recommendations(activity: str, age: int, gender: str, height: int, max_rec : int, weather : str, weight: int, admin: signin_admin = Depends(get_current_admin)):
+    global integratedToken
+    base_url = "https://bevbuddy.up.railway.app/recommendations"
+    headers = {
+        'accept': 'application/json',
+        'Authorization': f'Bearer {integratedToken}'
+    }
+    form_data = {
+        "activity": activity,
+        "age": age,
+        "gender": gender,
+        "height": height,
+        "max_rec": max_rec,
+        "weather": weather,
+        "weight": weight
+    }
+    response = requests.post(base_url, headers=headers, json=form_data)
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        return {'Error': response.status_code, 'Detail': response.text}
 
 app.include_router(auth)
 app.include_router(menu)
