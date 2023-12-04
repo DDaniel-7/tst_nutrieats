@@ -4,7 +4,7 @@ Dwicakra Danielle / 18221092
 
 Testing API dapat dilakukan dengan dns berikut:
 
-TBA link deploy integrasi:
+TBA link deploy integrasi: integrationdns.bdh6crgwhtdwaqan.southeastasia.azurecontainer.io/docs
 
 Sebelum menjalankan program maka ada beberapa yang perlu di install untuk menjalankan API
 # Install fastapi
