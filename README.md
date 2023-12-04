@@ -42,30 +42,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 uvicorn nutrieats:app --reload
 ```
 
-# Docker build
-```
-docker image build --tag demo-app-image .
-```
-# Docker run
-```
-docker container run --publish 8000:8000 --name demo-app-container demo-app-image
-```
-
-# Containerize Docker to Azure
-```
-docker login deployappimage.azurecr.io/daniel:latest
-```
-
-# Build image in azure
-```
-docker build -t deployappimage.azurecr.io/deployimage:latest .
-```
-
-# Push image in Azure
-```
-docker push deployappimage.azurecr.io/deployimage:latest
-```
-
 
 
 
